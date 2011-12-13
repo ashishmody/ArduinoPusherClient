@@ -32,7 +32,7 @@
 int _currentMapIndex = 0;
 const byte HASH_SIZE = 10;
 typedef void (*EventDelegate)(String data);
-static EventDelegate _bindAllDelegate;
+static EventDelegate _bindAllDelegate = NULL;
 static HashType<String,EventDelegate> _bindArray[HASH_SIZE];
 static HashMap<String,EventDelegate> _bindMap = HashMap<String,EventDelegate>( _bindArray, HASH_SIZE );
 
@@ -43,7 +43,7 @@ PusherClient::PusherClient(String appId) :
     _client.setDataArrivedDelegate(dataArrived);
 }
 #else
-byte server[] = { 174, 129, 22, 121 }; //ws.pusherapp.com
+byte server[] = { 107,20,224,65 }; //ws.pusherapp.com
 PusherClient::PusherClient(String appId) :
 _client(server, "/app/" + appId + "?client=js&version=1.9.0", 80)
 { 
@@ -71,10 +71,10 @@ void PusherClient::bindAll(EventDelegate delegate) {
     _bindAllDelegate = delegate;
 }
 
-void PusherClient::bind(String eventName, EventDelegate delegate) {
+/*void PusherClient::bind(String eventName, EventDelegate delegate) {
     _bindMap[_currentMapIndex](eventName, delegate);
     _currentMapIndex++;
-}
+}*/
 
 void PusherClient::subscribe(String channel) {
     triggerEvent("pusher:subscribe", "{\"channel\": \"" + channel + "\" }");
@@ -94,8 +94,13 @@ void PusherClient::unsubscribe(String channel) {
 
 void PusherClient::triggerEvent(String eventName, String eventData) {
     Serial.println("Triggering Event");
-    Serial.println("{\"event\": \"" + eventName + "\", \"data\": " + eventData + " }");
+    Serial.print("{\"event\": \"");
+    Serial.print(eventName);
+    Serial.print("\", \"data\": ");
+    Serial.print(eventData);
+    Serial.println(" }");
     _client.send("{\"event\": \"" + eventName + "\", \"data\": " + eventData + " }");
+    Serial.println("Trigger Event Sent");
 }
 
 
@@ -106,32 +111,36 @@ void PusherClient::dataArrived(WebSocketClient client, String data) {
     
     if (_bindAllDelegate != NULL) {
         _bindAllDelegate(data);
-    }
-    
+    } 
+
+    /*
     EventDelegate delegate = _bindMap.getValueOf(eventName);
     if (delegate != NULL) {
         delegate(data);
     }
-    
-    /*
+    */
+
+    /*    
     if (eventName == "pusher:connection_established") {
         String eventData = parseMessageMember("data", data);
         String socketId = parseMessageMember("socket_id", eventData);
         
-    }
-    else if(eventName == "pusher:connection_failed") {
+    } else if (eventName == "pusher:connection_failed") {
         
-    }
-    else if(eventName == "pusher:error") {
+    } else if (eventName == "pusher:error") {
         String message = parseMessageMember("message", data);
         String code = parseMessageMember("code", data);
-        
-    }
-    else if(eventName == "pusher:heartbeat") {
+	
+        Serial.print("error code:");
+	Serial.print(code);
+	Serial.print(", message:");
+	Serial.print(message);
+	Serial.println();
+       
+    } else if (eventName == "pusher:heartbeat") {
         String time = parseMessageMember("time", data);
         
-    }
-    else {
+    } else {
         String eventData = parseMessageMember("data", data);
         String channel = parseMessageMember("channel", data);
         
